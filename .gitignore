@@ -42,6 +42,9 @@ MANIFEST
 # text files
 *.txt
 
+# image files
+*.jpg
+
 # Some folders
 backup/
 ucf_detections/
