@@ -25,6 +25,8 @@ from core.model import YOWO, get_fine_tuning_parameters
 # ---------------------------------------------------------------
 args  = parser.parse_args()
 cfg   = parser.load_config(args)
+# print("args: ", args)
+# print("cfg: ", cfg)
 
 
 ####### Check backup directory, create if necessary
@@ -61,7 +63,7 @@ best_score   = 0 # initialize best score
 ####### Load resume path if necessary
 # ---------------------------------------------------------------
 if cfg.TRAIN.RESUME_PATH:
-    print("===================================================================")
+    print("\n===================================================================")
     print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
     checkpoint = torch.load(cfg.TRAIN.RESUME_PATH)
     cfg.TRAIN.BEGIN_EPOCH = checkpoint['epoch'] + 1
@@ -69,7 +71,7 @@ if cfg.TRAIN.RESUME_PATH:
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     print("Loaded model score: ", checkpoint['score'])
-    print("===================================================================")
+    print("===================================================================\n")
     del checkpoint
 
 
@@ -85,7 +87,7 @@ dataset = cfg.TRAIN.DATASET
 assert dataset == 'ucf24' or dataset == 'jhmdb21' or dataset == 'ava', 'invalid dataset'
 
 if dataset == 'ava':
-    print("11111111111111111 ava training start!!!!!")
+    print("@@@@@@@@@@@@@@@@@@ ava training start!!!!!")
     train_dataset = Ava(cfg, split='train', only_detection=False)
     print("train_dataset: ", train_dataset)
     test_dataset  = Ava(cfg, split='val', only_detection=False)

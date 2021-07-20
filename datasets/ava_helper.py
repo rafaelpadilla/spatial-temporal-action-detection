@@ -28,19 +28,22 @@ def load_image_lists(cfg, is_train):
     """
     # frame_list_dir is /data3/ava/frame_lists/
     # contains 'train.csv' and 'val.csv'
-    print("@@@ ava helper--> load_image_lists-->argus: is_train: ", is_train)
-    print("cfg.AVA.FRAME_LIST_DIR: ", cfg.AVA.FRAME_LIST_DIR)
+    print("#####  ava_helper. load_image_lists-->argus: is_train: ", is_train)
+    print("cfg.AVA.FRAME_LIST_DIR: ", cfg.AVA.FRAME_LIST_DIR) # where?
     print("cfg.AVA.TRAIN_LISTS: ", cfg.AVA.TRAIN_LISTS)
+
     list_filenames = [
         os.path.join(cfg.AVA.FRAME_LIST_DIR, filename)
         for filename in (
             cfg.AVA.TRAIN_LISTS if is_train else cfg.AVA.TEST_LISTS
         )
     ]
+    print("list_filenames: ", list_filenames) # 'datasets/AVA/frame_lists/train.csv'
+
     image_paths = defaultdict(list)
     video_name_to_idx = {}
     video_idx_to_name = []
-    for list_filename in list_filenames:
+    for list_filename in list_filenames: # list_filename: 'datasets/AVA/frame_lists/train.csv'
         with PathManager.open(list_filename, "r") as f:
             f.readline()
             for line in f:
@@ -62,12 +65,17 @@ def load_image_lists(cfg, is_train):
                 )
 
     image_paths = [image_paths[i] for i in range(len(image_paths))]
+    # print("image_paths: ", image_paths) # e.g., datasets/AVA/frames/SHBMiL5f_3Q/SHBMiL5f_3Q_005261.jpg
 
     logger.info(
         "Finished loading image paths from: %s" % ", ".join(list_filenames)
     )
+    print("######################################################################################")
     print("image_paths lengh: ", len(image_paths))
+    print("the first video first image path: ",  image_paths[0][0]) # "datasets/AVA/frames/-5KQ66BBWC4/-5KQ66BBWC4_000001.jpg"
     print("video_idx_to_name lengh: ", len(video_idx_to_name))
+    print("the first video index: ",  video_idx_to_name[0]) # "-5KQ66BBWC4"
+     
     return image_paths, video_idx_to_name
 
 
