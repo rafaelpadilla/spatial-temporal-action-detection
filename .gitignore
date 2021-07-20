@@ -31,6 +31,7 @@ MANIFEST
 *.spec
 
 *.mp4
+*.csv
 
 # trained models
 *.pth
