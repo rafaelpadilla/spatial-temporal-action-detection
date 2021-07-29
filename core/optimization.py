@@ -7,12 +7,18 @@ from datasets.meters import AVAMeter
 
 
 def train_ava(cfg, epoch, model, train_loader, loss_module, optimizer):
+    print("training function!!!!!!!!!!")
     t0 = time.time()
     loss_module.reset_meters()
     l_loader = len(train_loader)
+    print(" lenth l_loader: ", l_loader)
 
     model.train()
+    # print("$$$$$$$$$$$$$$$$$$$$222222")
+    # print(" lenth train_loader: ", len(train_loader))
+    # print("!!!!!!!!!!!!!11111111")
     for batch_idx, batch in enumerate(train_loader):
+        print("&&&&&&&&&&&&&&&&batch_idx: ", batch_idx)
         data = batch['clip'].cuda()
         target = {'cls': batch['cls'], 'boxes': batch['boxes']}
         output = model(data)
@@ -27,7 +33,7 @@ def train_ava(cfg, epoch, model, train_loader, loss_module, optimizer):
         # save result every 1000 batches
         if batch_idx % 2000 == 0: # From time to time, reset averagemeters to see improvements
             loss_module.reset_meters()
-
+    # print("!!!!!!!!!!!!!222222222")
     t1 = time.time()
     logging('trained with %f samples/s' % (len(train_loader.dataset)/(t1-t0)))
     print('')

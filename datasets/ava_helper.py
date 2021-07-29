@@ -28,9 +28,9 @@ def load_image_lists(cfg, is_train):
     """
     # frame_list_dir is /data3/ava/frame_lists/
     # contains 'train.csv' and 'val.csv'
-    print("#####  ava_helper. load_image_lists-->argus: is_train: ", is_train)
-    print("cfg.AVA.FRAME_LIST_DIR: ", cfg.AVA.FRAME_LIST_DIR) # where?
-    print("cfg.AVA.TRAIN_LISTS: ", cfg.AVA.TRAIN_LISTS)
+    print("@@@@@@@@@@ ava_helper. load_image_lists-->argus: is_train: ", is_train)
+    print("##### cfg.AVA.FRAME_LIST_DIR: ", cfg.AVA.FRAME_LIST_DIR) # where?
+    print("##### cfg.AVA.TRAIN_LISTS: ", cfg.AVA.TRAIN_LISTS)
 
     list_filenames = [
         os.path.join(cfg.AVA.FRAME_LIST_DIR, filename)
@@ -38,7 +38,7 @@ def load_image_lists(cfg, is_train):
             cfg.AVA.TRAIN_LISTS if is_train else cfg.AVA.TEST_LISTS
         )
     ]
-    print("list_filenames: ", list_filenames) # 'datasets/AVA/frame_lists/train.csv'
+    print("##### list_filenames: ", list_filenames) # 'datasets/AVA/frame_lists/train.csv'
 
     image_paths = defaultdict(list)
     video_name_to_idx = {}
@@ -50,6 +50,8 @@ def load_image_lists(cfg, is_train):
                 row = line.split()
                 # The format of each row should follow:
                 # original_vido_id video_id frame_id path labels.
+                # print("******************************* row: ", row)
+                # print("******************************* row: ", len(row))
                 assert len(row) == 5
                 video_name = row[0]
 
@@ -70,11 +72,11 @@ def load_image_lists(cfg, is_train):
     logger.info(
         "Finished loading image paths from: %s" % ", ".join(list_filenames)
     )
-    print("######################################################################################")
-    print("image_paths lengh: ", len(image_paths))
-    print("the first video first image path: ",  image_paths[0][0]) # "datasets/AVA/frames/-5KQ66BBWC4/-5KQ66BBWC4_000001.jpg"
-    print("video_idx_to_name lengh: ", len(video_idx_to_name))
-    print("the first video index: ",  video_idx_to_name[0]) # "-5KQ66BBWC4"
+    print("##### image_paths lengh: ", len(image_paths))
+    print("##### the first video first image path: ",  image_paths[0][0]) # "datasets/AVA/frames/-5KQ66BBWC4/-5KQ66BBWC4_000001.jpg"
+    print("##### video_idx_to_name lengh: ", len(video_idx_to_name))
+    print("##### the first video index: ",  video_idx_to_name[0]) # "-5KQ66BBWC4"
+    print("##### ava_helper load_image_lists over!!!")
      
     return image_paths, video_idx_to_name
 
@@ -93,6 +95,7 @@ def load_boxes_and_labels(cfg, mode):
             coordinates of box and 'box_labels` are the corresponding
             labels for the box.
     """
+    print("@@@@@@@@@@ ava_helper. load_boxes_and_labels")
     if cfg.TRAIN.USE_SLOWFAST:
         gt_filename = cfg.AVA.TRAIN_GT_BOX_LISTS if mode == 'train' else cfg.AVA.TEST_PREDICT_BOX_LISTS
     else:
@@ -162,7 +165,7 @@ def load_boxes_and_labels(cfg, mode):
     )
     logger.info("Number of unique boxes: %d" % unique_box_count)
     logger.info("Number of annotations: %d" % count)
-
+    print("##### len(all_boxes): ", len(all_boxes))
     return all_boxes
 
 

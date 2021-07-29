@@ -42,6 +42,7 @@ if cfg.TRAIN.RESUME_PATH:
 # ---------------------------------------------------------------
 
 labelmap, _       = read_labelmap("datasets/AVA/annotations/ava_action_list_v2.1.pbtxt")
+print("***************************************** labelmap: ", labelmap)
 num_classes       = cfg.MODEL.NUM_CLASSES
 clip_length		  = cfg.DATA.NUM_FRAMES
 crop_size 		  = cfg.DATA.TEST_CROP_SIZE

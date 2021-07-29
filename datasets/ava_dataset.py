@@ -49,7 +49,8 @@ class Ava(torch.utils.data.Dataset):
             self._crop_size = cfg.DATA.TEST_CROP_SIZE
             self._test_force_flip = cfg.AVA.TEST_FORCE_FLIP
             self._jitter_min_scale = cfg.DATA.TRAIN_JITTER_SCALES[0]
-        print("##### Class Ava --init-- ######\n")
+        print("-------------------------------------------------------------")
+        print("@@@@@@@@@@ Class Ava --init-- split: ", split)
         self._load_data(cfg)
 
     def _load_data(self, cfg):
@@ -65,8 +66,8 @@ class Ava(torch.utils.data.Dataset):
             self._image_paths,
             self._video_idx_to_name,
         ) = ava_helper.load_image_lists(cfg, is_train=(self._split == "train"))
-        print("##### Class Ava: _load_data function --> ava_helper.load_image_lists ######\n")
-        # print("############# self._image_paths: self._video_idx_to_name:", self._image_paths, self._video_idx_to_name,)
+        print("@@@@@@@@@@ Class Ava: _load_data function --> ava_helper.load_image_lists")
+        print("@@@@@@@@@@ self._image_paths: self._video_idx_to_name: ", len(self._image_paths), len(self._video_idx_to_name))
 
         # Loading annotations for boxes and labels.
         # boxes_and_labels: {'<video_name>': {<frame_num>: a list of [box_i, box_i_labels]} }
