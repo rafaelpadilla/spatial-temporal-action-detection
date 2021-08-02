@@ -25,7 +25,7 @@ assert dataset == 'ucf24' or dataset == 'jhmdb21', 'invalid dataset'
 
 gt_file       = 'cfg/ucf24_finalAnnots.mat' # Necessary for ucf
 base_path     = cfg.LISTDATA.BASE_PTH
-testlist      = os.path.join(base_path, 'testlist_video1.txt')
+testlist      = os.path.join(base_path, 'testlist_video.txt')
 
 clip_duration = cfg.DATA.NUM_FRAMES
 sampling_rate = cfg.DATA.SAMPLING_RATE
@@ -48,6 +48,19 @@ model = nn.DataParallel(model, device_ids=None) # in multi-gpu case
 # print(model)
 pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 logging('Total number of trainable parameters: {}'.format(pytorch_total_params))
+
+
+# Load resume path 
+
+# if cfg.TRAIN.RESUME_PATH:
+#     print("===================================================================")
+#     print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
+#     checkpoint = torch.load(cfg.TRAIN.RESUME_PATH)
+#     model.load_state_dict(checkpoint['state_dict'])
+#     model.eval()
+#     print("Model loaded!")
+#     print("===================================================================")
+#     del checkpoint
 
 
 def get_clip(root, imgpath, train_dur, sampling_rate, dataset):
@@ -147,7 +160,7 @@ def video_mAP_ucf():
         for line in lines:
             line = line.rstrip()
             video_testlist.append(line)
-    print("@@@@@@ video_testlist: ", video_testlist)
+
     detected_boxes = {}
     gt_videos = {}
 
@@ -155,7 +168,6 @@ def video_mAP_ucf():
     n_videos = gt_data.shape[1]
     for i in range(n_videos):
         video_name = gt_data[0][i][1][0]
-        print(video_name)
         if video_name in video_testlist:
             n_tubes = len(gt_data[0][i][2][0])
             v_annotation = {}
@@ -182,47 +194,47 @@ def video_mAP_ucf():
             v_annotation['tubes'] = np.array(all_gt_boxes)
             gt_videos[video_name] = v_annotation
 
-    # for line in lines:
-    #     print(line)
-    #     line = line.rstrip()
-    #     test_loader = torch.utils.data.DataLoader(
-    #                       testData(os.path.join(base_path, 'rgb-images', line),
-    #                       shape=(224, 224), transform=transforms.Compose([
-    #                       transforms.ToTensor()]), clip_duration=clip_duration, sampling_rate=sampling_rate),
-    #                       batch_size=2, shuffle=False, num_workers= 8, pin_memory= True)
+    for line in lines:
+        print(line)
+        line = line.rstrip()
+        test_loader = torch.utils.data.DataLoader(
+                          testData(os.path.join(base_path, 'rgb-images', line),
+                          shape=(224, 224), transform=transforms.Compose([
+                          transforms.ToTensor()]), clip_duration=clip_duration, sampling_rate=sampling_rate),
+                          batch_size=2, shuffle=False, num_workers= 8, pin_memory= True)
 
-    #     for batch_idx, (data, target, img_name) in enumerate(test_loader):
-    #         data = data.cuda()
-    #         with torch.no_grad():
-    #             data = Variable(data)
-    #             output = model(data).data
+        for batch_idx, (data, target, img_name) in enumerate(test_loader):
+            data = data.cuda()
+            with torch.no_grad():
+                data = Variable(data)
+                output = model(data).data
 
-    #             all_boxes = get_region_boxes_video(output, conf_thresh, num_classes, anchors, num_anchors, 0, 1)
-    #             for i in range(output.size(0)):
-    #                 boxes = all_boxes[i]
-    #                 boxes = nms(boxes, nms_thresh)
-    #                 n_boxes = len(boxes)
+                all_boxes = get_region_boxes_video(output, conf_thresh, num_classes, anchors, num_anchors, 0, 1)
+                for i in range(output.size(0)):
+                    boxes = all_boxes[i]
+                    boxes = nms(boxes, nms_thresh)
+                    n_boxes = len(boxes)
 
-    #                 # generate detected tubes for all classes
-    #                 # save format: {img_name: {cls_ind: array[[x1,y1,x2,y2, cls_score], [], ...]}}
-    #                 img_annotation = {}
-    #                 for cls_idx in range(num_classes):
-    #                     cls_idx += 1    # index begins from 1
-    #                     cls_boxes = np.zeros([n_boxes, 5], dtype=np.float32)
-    #                     for b in range(n_boxes):
-    #                         cls_boxes[b][0] = max(float(boxes[b][0]-boxes[b][2]/2.0) * 320.0, 0.0)
-    #                         cls_boxes[b][1] = max(float(boxes[b][1]-boxes[b][3]/2.0) * 240.0, 0.0)
-    #                         cls_boxes[b][2] = min(float(boxes[b][0]+boxes[b][2]/2.0) * 320.0, 320.0)
-    #                         cls_boxes[b][3] = min(float(boxes[b][1]+boxes[b][3]/2.0) * 240.0, 240.0)
-    #                         cls_boxes[b][4] = float(boxes[b][5+(cls_idx-1)*2])
-    #                     img_annotation[cls_idx] = cls_boxes
-    #                 detected_boxes[img_name[i]] = img_annotation
+                    # generate detected tubes for all classes
+                    # save format: {img_name: {cls_ind: array[[x1,y1,x2,y2, cls_score], [], ...]}}
+                    img_annotation = {}
+                    for cls_idx in range(num_classes):
+                        cls_idx += 1    # index begins from 1
+                        cls_boxes = np.zeros([n_boxes, 5], dtype=np.float32)
+                        for b in range(n_boxes):
+                            cls_boxes[b][0] = max(float(boxes[b][0]-boxes[b][2]/2.0) * 320.0, 0.0)
+                            cls_boxes[b][1] = max(float(boxes[b][1]-boxes[b][3]/2.0) * 240.0, 0.0)
+                            cls_boxes[b][2] = min(float(boxes[b][0]+boxes[b][2]/2.0) * 320.0, 320.0)
+                            cls_boxes[b][3] = min(float(boxes[b][1]+boxes[b][3]/2.0) * 240.0, 240.0)
+                            cls_boxes[b][4] = float(boxes[b][5+(cls_idx-1)*2])
+                        img_annotation[cls_idx] = cls_boxes
+                    detected_boxes[img_name[i]] = img_annotation
 
 
-    # iou_list = [0.05, 0.1, 0.2, 0.3, 0.5, 0.75]
-    # for iou_th in iou_list:
-    #     print('iou is: ', iou_th)
-    #     print(evaluate_videoAP(gt_videos, detected_boxes, CLASSES, iou_th, True))
+    iou_list = [0.05, 0.1, 0.2, 0.3, 0.5, 0.75]
+    for iou_th in iou_list:
+        print('iou is: ', iou_th)
+        print(evaluate_videoAP(gt_videos, detected_boxes, CLASSES, iou_th, True))
 
 
 

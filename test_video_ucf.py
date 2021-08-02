@@ -10,7 +10,7 @@ from datasets.meters import AVAMeter
 from core.optimization import *
 from cfg import parser
 from core.utils import *
-from core.model import YOWO
+from core.model import YOWO, get_fine_tuning_parameters
 
 ####### Load configuration arguments
 # ---------------------------------------------------------------
@@ -24,8 +24,45 @@ model = YOWO(cfg)
 model = model.cuda()
 model = nn.DataParallel(model, device_ids=None) # in multi-gpu case
 
+pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+logging('Total number of trainable parameters: {}'.format(pytorch_total_params))
+
+seed = int(time.time())
+torch.manual_seed(seed)
+use_cuda = True
+if use_cuda:
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0' # TODO: add to config e.g. 0,1,2,3
+    torch.cuda.manual_seed(seed)
+
+
+####### Create optimizer
+# ---------------------------------------------------------------
+parameters = get_fine_tuning_parameters(model, cfg)
+optimizer = torch.optim.Adam(parameters, lr=cfg.TRAIN.LEARNING_RATE, weight_decay=cfg.SOLVER.WEIGHT_DECAY)
+best_score   = 0 # initialize best score
+
 ####### Load resume path if necessary
 # ---------------------------------------------------------------
+# if cfg.TRAIN.RESUME_PATH:
+#     print("===================================================================")
+#     print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
+#     checkpoint = torch.load(cfg.TRAIN.RESUME_PATH)
+#     # cfg.TRAIN.BEGIN_EPOCH = checkpoint['epoch'] + 1
+#     # best_score = checkpoint['score']
+#     model.load_state_dict(checkpoint['state_dict'])
+#     print("===================================================================")
+#     del checkpoint
+
+# if cfg.TRAIN.RESUME_PATH:
+#     print("===================================================================")
+#     print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
+#     checkpoint = torch.load(cfg.TRAIN.RESUME_PATH)
+#     model.load_state_dict(checkpoint['state_dict'])
+#     model.eval()
+#     print("Model loaded!")
+#     print("===================================================================")
+#     del checkpoint
+
 if cfg.TRAIN.RESUME_PATH:
     print("===================================================================")
     print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
@@ -33,21 +70,11 @@ if cfg.TRAIN.RESUME_PATH:
     cfg.TRAIN.BEGIN_EPOCH = checkpoint['epoch'] + 1
     best_score = checkpoint['score']
     model.load_state_dict(checkpoint['state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
     print("Loaded model score: ", checkpoint['score'])
     print("===================================================================")
     del checkpoint
 
-    # if cfg.TRAIN.RESUME_PATH:
-    #     print("\n===================================================================")
-    #     print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
-    #     checkpoint = torch.load(cfg.TRAIN.RESUME_PATH)
-    #     cfg.TRAIN.BEGIN_EPOCH = checkpoint['epoch'] + 1
-    #     best_score = checkpoint['score']
-    #     model.load_state_dict(checkpoint['state_dict'])
-    #     optimizer.load_state_dict(checkpoint['optimizer'])
-    #     print("Loaded model score: ", checkpoint['score'])
-    #     print("===================================================================\n")
-    #     del checkpoint
 
 ####### Test parameters
 # ---------------------------------------------------------------
@@ -59,19 +86,31 @@ crop_size 		  = cfg.DATA.TEST_CROP_SIZE
 anchors           = [float(i) for i in cfg.SOLVER.ANCHORS]
 num_anchors       = cfg.SOLVER.NUM_ANCHORS
 nms_thresh        = 0.5
+# conf_thresh_valid = 0.5 # For more stable results, this threshold is increased!
 conf_thresh_valid = 0.5 # For more stable results, this threshold is increased!
-meter = AVAMeter(cfg, cfg.TRAIN.MODE, 'latest_detection.json')
+
 model.eval()
+
+
+gt_file       = 'cfg/ucf24_finalAnnots.mat' # Necessary for ucf
+base_path     = cfg.LISTDATA.BASE_PTH
+# Test parameters
+conf_thresh   = 0.005
+nms_thresh    = 0.4
+eps           = 1e-5
 
 ####### Data preparation and inference 
 # ---------------------------------------------------------------
-video_path = 'datasets/AVA/video_done/demo.mp4'
+video_path = 'datasets/AVA/video_done/soccer.mp4'
 cap = cv2.VideoCapture(video_path)
 cnt = 1
+count = 1
 queue = []
 while(cap.isOpened()):
-    print("cnt:, len(queue): ", cnt, len(queue))
+    print("test")
     ret, frame = cap.read()
+    print(count, len(queue))
+    count += 1
 
     if len(queue) <= 0: # At initialization, populate queue with initial frame
     	for i in range(clip_length):
@@ -117,18 +156,18 @@ while(cap.isOpened()):
     imgs = torch.from_numpy(imgs)
     imgs = torch.unsqueeze(imgs, 0)
 
-
-    # Model inference
+    # # Model inference
     with torch.no_grad():
         output = model(imgs)
+        # output = output.data
 
         preds = []
-        all_boxes = get_region_boxes_ava(output, conf_thresh_valid, num_classes, anchors, num_anchors, 0, 1)
-        print("step1, box amount: ", len(all_boxes))
+        # all_boxes = get_region_boxes_ava(output, conf_thresh_valid, num_classes, anchors, num_anchors, 0, 1)
+        all_boxes = get_region_boxes(output, conf_thresh_valid, num_classes, anchors, num_anchors, 0, 1)
         for i in range(output.size(0)):
             boxes = all_boxes[i]
             boxes = nms(boxes, nms_thresh)
-            print("step2, box amount: ", len(boxes))
+            print("box amount: ", len(boxes))
             
             for box in boxes:
                 x1 = float(box[0]-box[2]/2.0)
@@ -136,7 +175,6 @@ while(cap.isOpened()):
                 x2 = float(box[0]+box[2]/2.0)
                 y2 = float(box[1]+box[3]/2.0)
                 det_conf = float(box[4])
-                print("conf: ", det_conf)
                 cls_out = [det_conf * x.cpu().numpy() for x in box[5]]
                 preds.append([[x1,y1,x2,y2], cls_out])
 
@@ -168,8 +206,6 @@ while(cap.isOpened()):
             frame = cv2.addWeighted(frame, 1.0, blk, 0.25, 1)
             for t in range(len(text)):
                 cv2.putText(frame, text[t], coord[t], font, 0.25, (0, 0, 0), 1)
-
-
 
     cv2.imshow('frame',frame)
     # cv2.imwrite('{:05d}.jpg'.format(cnt), frame) # save figures if necessay

@@ -269,6 +269,7 @@ def get_region_boxes(output, conf_thresh, num_classes, anchors, num_anchors, onl
 
     t0 = time.time()
     all_boxes = []
+    # after reshaping, 29 * 980 = (5 + classes) * (batchsize * anchors * h * w)
     output = output.view(batch*num_anchors, 5+num_classes, h*w).transpose(0,1).contiguous().view(5+num_classes, batch*num_anchors*h*w)
 
     grid_x = torch.linspace(0, w-1, w).repeat(h,1).repeat(batch*num_anchors, 1, 1).view(batch*num_anchors*h*w).cuda()

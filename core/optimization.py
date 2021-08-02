@@ -122,12 +122,15 @@ def test_ucf24_jhmdb21(cfg, epoch, model, test_loader):
                 return i
 
     # Test parameters
-    nms_thresh    = 0.4
-    iou_thresh    = 0.5
+    # nms_thresh    = 0.4
+    # iou_thresh    = 0.5
+    nms_thresh    = 0.1
+    iou_thresh    = 0.2
     eps           = 1e-5
     num_classes = cfg.MODEL.NUM_CLASSES
     anchors     = [float(i) for i in cfg.SOLVER.ANCHORS]
     num_anchors = cfg.SOLVER.NUM_ANCHORS
+    # conf_thresh_valid = 0.005
     conf_thresh_valid = 0.005
     total       = 0.0
     proposals   = 0.0
@@ -138,19 +141,23 @@ def test_ucf24_jhmdb21(cfg, epoch, model, test_loader):
     total_detected = 0.0
 
     nbatch = len(test_loader)
+    print("@@@@@@@@@@@@@@@@@@@ nbatch: ", nbatch)
 
     model.eval()
 
     for batch_idx, (frame_idx, data, target) in enumerate(test_loader):
         data = data.cuda()
         with torch.no_grad():
-            output = model(data).data
+            output = model(data).data # 4 ∗ 145 ∗ 7 ∗ 7
             all_boxes = get_region_boxes(output, conf_thresh_valid, num_classes, anchors, num_anchors, 0, 1)
             for i in range(output.size(0)):
                 boxes = all_boxes[i]
                 boxes = nms(boxes, nms_thresh)
+                print(" len of boxes: ", len(boxes))
+
                 if cfg.TRAIN.DATASET == 'ucf24':
                     detection_path = os.path.join('ucf_detections', 'detections_'+str(epoch), frame_idx[i])
+                    print("detection_path: ", detection_path)
                     current_dir = os.path.join('ucf_detections', 'detections_'+str(epoch))
                     if not os.path.exists('ucf_detections'):
                         os.mkdir('ucf_detections')

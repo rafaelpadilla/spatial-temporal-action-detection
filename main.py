@@ -21,14 +21,10 @@ from core.region_loss import RegionLoss, RegionLoss_Ava
 from core.model import YOWO, get_fine_tuning_parameters
 
 if __name__ == '__main__':
-
     ####### Load configuration arguments
     # ---------------------------------------------------------------
     args  = parser.parse_args()
     cfg   = parser.load_config(args)
-    print("args: ", args)
-    # print("cfg: ", cfg)
-
 
     ####### Check backup directory, create if necessary
     # ---------------------------------------------------------------
@@ -61,25 +57,19 @@ if __name__ == '__main__':
     # optimizer = optim.SGD(parameters, lr=cfg.TRAIN.LEARNING_RATE/batch_size, momentum=cfg.SOLVER.MOMENTUM, dampening=0, weight_decay=cfg.SOLVER.WEIGHT_DECAY)
 
 
-    # ####### Load resume path if necessary
-    # # ---------------------------------------------------------------
-    # if cfg.TRAIN.RESUME_PATH:
-    #     print("\n===================================================================")
-    #     print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
-    #     checkpoint = torch.load(cfg.TRAIN.RESUME_PATH)
-    #     cfg.TRAIN.BEGIN_EPOCH = checkpoint['epoch'] + 1
-    #     best_score = checkpoint['score']
-    #     model.load_state_dict(checkpoint['state_dict'])
-    #     optimizer.load_state_dict(checkpoint['optimizer'])
-    #     print("Loaded model score: ", checkpoint['score'])
-    #     print("===================================================================\n")
-    #     del checkpoint
-
-
-    ####### Create backup directory if necessary
+    ####### Load resume path if necessary
     # ---------------------------------------------------------------
-    if not os.path.exists(cfg.BACKUP_DIR):
-        os.mkdir(cfg.BACKUP_DIR)
+    if cfg.TRAIN.RESUME_PATH:
+        print("===================================================================")
+        print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
+        checkpoint = torch.load(cfg.TRAIN.RESUME_PATH)
+        cfg.TRAIN.BEGIN_EPOCH = checkpoint['epoch'] + 1
+        best_score = checkpoint['score']
+        model.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        print("Loaded model score: ", checkpoint['score'])
+        print("===================================================================")
+        del checkpoint
 
 
     ####### Data loader, training scheme and loss function are different for AVA and UCF24/JHMDB21 datasets
@@ -88,21 +78,16 @@ if __name__ == '__main__':
     assert dataset == 'ucf24' or dataset == 'jhmdb21' or dataset == 'ava', 'invalid dataset'
 
     if dataset == 'ava':
-        print("***********************Ava assemble train dataset!!!!!")
         train_dataset = Ava(cfg, split='train', only_detection=False)
         test_dataset  = Ava(cfg, split='val', only_detection=False)
-
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=cfg.TRAIN.BATCH_SIZE, shuffle=True, 
                                                 num_workers=cfg.DATA_LOADER.NUM_WORKERS, drop_last=True, pin_memory=True)
-        
         test_loader  = torch.utils.data.DataLoader(test_dataset, batch_size=cfg.TRAIN.BATCH_SIZE, shuffle=False,
                                                 num_workers=cfg.DATA_LOADER.NUM_WORKERS, drop_last=False, pin_memory=True)
-
         loss_module   = RegionLoss_Ava(cfg).cuda()
 
         train = getattr(sys.modules[__name__], 'train_ava')
         test  = getattr(sys.modules[__name__], 'test_ava')
-
 
     elif dataset in ['ucf24', 'jhmdb21']:
         train_dataset = list_dataset.UCF_JHMDB_Dataset(cfg.LISTDATA.BASE_PTH, cfg.LISTDATA.TRAIN_FILE, dataset=dataset,
@@ -113,12 +98,10 @@ if __name__ == '__main__':
                         shape=(cfg.DATA.TRAIN_CROP_SIZE, cfg.DATA.TRAIN_CROP_SIZE),
                         transform=transforms.Compose([transforms.ToTensor()]), 
                         train=False, clip_duration=cfg.DATA.NUM_FRAMES, sampling_rate=cfg.DATA.SAMPLING_RATE)
-
         train_loader  = torch.utils.data.DataLoader(train_dataset, batch_size= cfg.TRAIN.BATCH_SIZE, shuffle=True,
                                                 num_workers=cfg.DATA_LOADER.NUM_WORKERS, drop_last=True, pin_memory=True)
         test_loader   = torch.utils.data.DataLoader(test_dataset, batch_size= cfg.TRAIN.BATCH_SIZE, shuffle=False,
                                                 num_workers=cfg.DATA_LOADER.NUM_WORKERS, drop_last=False, pin_memory=True)
-
         loss_module   = RegionLoss(cfg).cuda()
 
         train = getattr(sys.modules[__name__], 'train_ucf24_jhmdb21')
@@ -128,18 +111,14 @@ if __name__ == '__main__':
     ####### Training and Testing Schedule
     # ---------------------------------------------------------------
     if cfg.TRAIN.EVALUATE:
-        print("@@@@@@@@@@@ evaluating!!! ")
-        logging('evaluating ...')
+        logging('evaluating***********************')
         test(cfg, 0, model, test_loader)
     else:
-        print("@@@@@@@@@@@ training !!! ")
+        logging('training**************************')
         for epoch in range(cfg.TRAIN.BEGIN_EPOCH, cfg.TRAIN.END_EPOCH + 1):
-            # Adjust learning rate
-            lr_new = adjust_learning_rate(optimizer, epoch, cfg)
-            
-            # Train and test model
-            logging('training at epoch %d, lr %f' % (epoch, lr_new))
-            train(cfg, epoch, model, train_loader, loss_module, optimizer)
+            lr_new = adjust_learning_rate(optimizer, epoch, cfg) # Adjust learning rate
+            logging('training at epoch %d, lr %f' % (epoch, lr_new)) # Train and test model
+            train(cfg, epoch, model, train_loader, loss_module, optimizer) 
             logging('testing at epoch %d' % (epoch))
             score = test(cfg, epoch, model, test_loader)
 

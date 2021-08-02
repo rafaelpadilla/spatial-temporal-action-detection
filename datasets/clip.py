@@ -141,9 +141,9 @@ def fill_truth_detection(labpath, w, h, flip, dx, dy, sx, sy):
 def load_data_detection(base_path, imgpath, train, train_dur, sampling_rate, shape, dataset_use='ucf24', jitter=0.2, hue=0.1, saturation=1.5, exposure=1.5):
     # clip loading and  data augmentation
 
-    im_split = imgpath.split('/')
+    im_split = imgpath.split('/') # get img path and label path
     num_parts = len(im_split)
-    im_ind = int(im_split[num_parts-1][0:5])
+    im_ind = int(im_split[num_parts-1][0:5]) # 56? frame ID in the video
     labpath = os.path.join(base_path, 'labels', im_split[0], im_split[1] ,'{:05d}.txt'.format(im_ind))
 
     img_folder = os.path.join(base_path, 'rgb-images', im_split[0], im_split[1])
@@ -157,11 +157,11 @@ def load_data_detection(base_path, imgpath, train, train_dur, sampling_rate, sha
     ### We change downsampling rate throughout training as a       ###
     ### temporal augmentation, which brings around 1-2 frame       ###
     ### mAP. During test time it is set to cfg.DATA.SAMPLING_RATE. ###
-    d = sampling_rate
+    d = sampling_rate # frame gap
     if train:
-        d = random.randint(1, 2)
+        d = random.randint(1, 2) 
 
-    for i in reversed(range(train_dur)):
+    for i in reversed(range(train_dur)): # train_dur default 16
         # make it as a loop
         i_temp = im_ind - i * d
         if i_temp < 1:
@@ -178,6 +178,7 @@ def load_data_detection(base_path, imgpath, train, train_dur, sampling_rate, sha
 
     if train: # Apply augmentation
         clip,flip,dx,dy,sx,sy = data_augmentation(clip, shape, jitter, hue, saturation, exposure)
+        # class, xmin, ymin, xmax, ymax ​
         label = fill_truth_detection(labpath, clip[0].width, clip[0].height, flip, dx, dy, 1./sx, 1./sy)
         label = torch.from_numpy(label)
 
@@ -214,7 +215,7 @@ def get_clip(root, imgpath, train_dur, num_samples):
     im_ind = int(im_split[num_parts - 1][0:5])
 
     # for UCF101 dataset
-    base_path = "/usr/home/sut/datasets/ucf24"
+    base_path = "datasets/ucf24"
     labpath = os.path.join(base_path, 'labels', im_split[6], im_split[7], '{:05d}.txt'.format(im_ind))
     img_folder = os.path.join(base_path, 'rgb-images', im_split[6], im_split[7])
 

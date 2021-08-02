@@ -1,13 +1,14 @@
 TRAIN:
-  RESUME_PATH: "backup/ucf24/yowo_ucf101-24_16f_best.pth"
+  RESUME_PATH: "backup/ucf24/yowo_ucf24_16f_best.pth"
+  # RESUME_PATH: ""
   DATASET: ucf24  # `ava`, `ucf24` or `jhmdb21`
   BATCH_SIZE: 2
   TOTAL_BATCH_SIZE: 128
   LEARNING_RATE: 1e-4
-  EVALUATE: False
+  EVALUATE: True
   FINE_TUNE: False
   BEGIN_EPOCH: 1
-  END_EPOCH: 10
+  END_EPOCH: 3
 SOLVER:
   MOMENTUM: 0.9
   WEIGHT_DECAY: 5e-4
@@ -38,8 +39,8 @@ WEIGHTS:
   FREEZE_BACKBONE_2D: False
 LISTDATA:
   BASE_PTH: "datasets/ucf24"
-  TRAIN_FILE: "datasets/ucf24/trainlist.txt"
-  TEST_FILE: "datasets/ucf24/testlist.txt"
+  TRAIN_FILE: "datasets/ucf24/trainlist_less.txt"
+  TEST_FILE: "datasets/ucf24/testlist_less.txt"
   TEST_VIDEO_FILE: "datasets/ucf24/testlist_video.txt"
   MAX_OBJS: 6
   CLASS_NAMES: [

@@ -20,7 +20,7 @@ class UCF_JHMDB_Dataset(Dataset):
                  transform=None, target_transform=None, 
                  train=False, clip_duration=16, sampling_rate=1):
         with open(root, 'r') as file:
-            self.lines = file.readlines()
+            self.lines = file.readlines() # save trainlist.txt content
 
         self.base_path = base
         self.dataset = dataset
@@ -39,16 +39,33 @@ class UCF_JHMDB_Dataset(Dataset):
         assert index <= len(self), 'index range error'
         imgpath = self.lines[index].rstrip()
 
-        if self.train: # For Training
-            jitter = 0.2
+        if self.train: # for training
+            jitter = 0.2 # generate more data 
             hue = 0.1
             saturation = 1.5 
             exposure = 1.5
+            # clip: tensor 3 * 16 * 224 * 224 
+            clip, label = load_data_detection(self.base_path, 
+                                              imgpath,  
+                                              self.train, 
+                                              self.clip_duration, 
+                                              self.sampling_rate, 
+                                              self.shape, 
+                                              self.dataset, 
+                                              jitter, 
+                                              hue, 
+                                              saturation, 
+                                              exposure)
 
-            clip, label = load_data_detection(self.base_path, imgpath,  self.train, self.clip_duration, self.sampling_rate, self.shape, self.dataset, jitter, hue, saturation, exposure)
+        else: # for testing
+            frame_idx, clip, label = load_data_detection(self.base_path, 
+                                                         imgpath, 
+                                                         False, 
+                                                         self.clip_duration, 
+                                                         self.sampling_rate, 
+                                                         self.shape, 
+                                                         self.dataset)
 
-        else: # For Testing
-            frame_idx, clip, label = load_data_detection(self.base_path, imgpath, False, self.clip_duration, self.sampling_rate, self.shape, self.dataset)
             clip = [img.resize(self.shape) for img in clip]
 
         if self.transform is not None:
