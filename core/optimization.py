@@ -14,9 +14,6 @@ def train_ava(cfg, epoch, model, train_loader, loss_module, optimizer):
     print(" lenth l_loader: ", l_loader)
 
     model.train()
-    # print("$$$$$$$$$$$$$$$$$$$$222222")
-    # print(" lenth train_loader: ", len(train_loader))
-    # print("!!!!!!!!!!!!!11111111")
     for batch_idx, batch in enumerate(train_loader):
         print("&&&&&&&&&&&&&&&&batch_idx: ", batch_idx)
         data = batch['clip'].cuda()
@@ -33,11 +30,9 @@ def train_ava(cfg, epoch, model, train_loader, loss_module, optimizer):
         # save result every 1000 batches
         if batch_idx % 2000 == 0: # From time to time, reset averagemeters to see improvements
             loss_module.reset_meters()
-    # print("!!!!!!!!!!!!!222222222")
     t1 = time.time()
     logging('trained with %f samples/s' % (len(train_loader.dataset)/(t1-t0)))
     print('')
-
 
 
 def train_ucf24_jhmdb21(cfg, epoch, model, train_loader, loss_module, optimizer):
@@ -119,6 +114,7 @@ def test_ucf24_jhmdb21(cfg, epoch, model, test_loader):
     def truths_length(truths):
         for i in range(50):
             if truths[i][1] == 0:
+                # print("i: ", i)
                 return i
 
     # Test parameters
@@ -130,12 +126,18 @@ def test_ucf24_jhmdb21(cfg, epoch, model, test_loader):
     num_classes = cfg.MODEL.NUM_CLASSES
     anchors     = [float(i) for i in cfg.SOLVER.ANCHORS]
     num_anchors = cfg.SOLVER.NUM_ANCHORS
-    # conf_thresh_valid = 0.005
     conf_thresh_valid = 0.005
     total       = 0.0
     proposals   = 0.0
     correct     = 0.0
     fscore = 0.0
+
+    print("num_classes: {}".format(num_classes))
+    print("anchors: {}".format(anchors))
+    print("num_anchors: {}".format(num_anchors))
+    # print("num_classes: {}".format())
+
+
 
     correct_classification = 0.0
     total_detected = 0.0
@@ -144,11 +146,19 @@ def test_ucf24_jhmdb21(cfg, epoch, model, test_loader):
     print("@@@@@@@@@@@@@@@@@@@ nbatch: ", nbatch)
 
     model.eval()
-
+    count = 0
     for batch_idx, (frame_idx, data, target) in enumerate(test_loader):
+        if count == 0:
+            print("batch_idx: ", batch_idx)
+            print("frame_idx: ", frame_idx)
+            print("data: ", data.shape)
+            print("target: ", target.shape)
+            # print("data: ", data)
+            # print("target: ", target)
+        count += 1
         data = data.cuda()
         with torch.no_grad():
-            output = model(data).data # 4 ∗ 145 ∗ 7 ∗ 7
+            output = model(data).data # model output, 4 ∗ 145 ∗ 7 ∗ 7
             all_boxes = get_region_boxes(output, conf_thresh_valid, num_classes, anchors, num_anchors, 0, 1)
             for i in range(output.size(0)):
                 boxes = all_boxes[i]
@@ -184,18 +194,24 @@ def test_ucf24_jhmdb21(cfg, epoch, model, test_loader):
                             prob = det_conf * cls_conf
 
                             f_detect.write(str(int(box[6])+1) + ' ' + str(prob) + ' ' + str(x1) + ' ' + str(y1) + ' ' + str(x2) + ' ' + str(y2) + '\n')
+                # 其shape为50∗5 通过truths_length获取真实的target数量。
                 truths = target[i].view(-1, 5)
+                # print("opt truths:", truths)
                 num_gts = truths_length(truths)
+                print("num_gts: ", num_gts)
         
                 total = total + num_gts
                 pred_list = [] # LIST OF CONFIDENT BOX INDICES
                 for i in range(len(boxes)):
                     if boxes[i][4] > 0.25:
+                        # print("######### boxes[i]: ", boxes[i])
                         proposals = proposals+1
                         pred_list.append(i)
 
                 for i in range(num_gts):
                     box_gt = [truths[i][1], truths[i][2], truths[i][3], truths[i][4], 1.0, 1.0, truths[i][0]]
+                    print("box_gt: ", box_gt)
+                    print("len(pred_list)： ", len(pred_list))
                     best_iou = 0
                     best_j = -1
                     for j in pred_list: # ITERATE THROUGH ONLY CONFIDENT BOXES

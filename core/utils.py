@@ -269,7 +269,7 @@ def get_region_boxes(output, conf_thresh, num_classes, anchors, num_anchors, onl
 
     t0 = time.time()
     all_boxes = []
-    # after reshaping, 29 * 980 = (5 + classes) * (batchsize * anchors * h * w)
+    # reshaping output, 29 * 980 = (5 + classes) * (batchsize * anchors * h * w)
     output = output.view(batch*num_anchors, 5+num_classes, h*w).transpose(0,1).contiguous().view(5+num_classes, batch*num_anchors*h*w)
 
     grid_x = torch.linspace(0, w-1, w).repeat(h,1).repeat(batch*num_anchors, 1, 1).view(batch*num_anchors*h*w).cuda()
@@ -284,9 +284,9 @@ def get_region_boxes(output, conf_thresh, num_classes, anchors, num_anchors, onl
     ws = torch.exp(output[2]) * anchor_w
     hs = torch.exp(output[3]) * anchor_h
 
-    det_confs = torch.sigmoid(output[4])
+    det_confs = torch.sigmoid(output[4]) # detection box confidence
 
-    cls_confs = torch.nn.Softmax()(Variable(output[5:5+num_classes].transpose(0,1))).data
+    cls_confs = torch.nn.Softmax()(Variable(output[5:5+num_classes].transpose(0,1))).data # softmax classes score
     cls_max_confs, cls_max_ids = torch.max(cls_confs, 1)
     cls_max_confs = cls_max_confs.view(-1)
     cls_max_ids = cls_max_ids.view(-1)
@@ -598,6 +598,7 @@ def read_truths(lab_path):
         return np.array([])
     if os.path.getsize(lab_path):
         truths = np.loadtxt(lab_path)
+        # print("truths1: ", truths)
         truths = truths.reshape(truths.size//5, 5) # to avoid single truth problem
         return truths
     else:
@@ -605,6 +606,7 @@ def read_truths(lab_path):
 
 def read_truths_args(lab_path, min_box_scale):
     truths = read_truths(lab_path)
+    # print("truths2: ", truths)
     new_truths = []
     for i in range(truths.shape[0]):
         cx = (truths[i][1] + truths[i][3]) / (2 * 320)

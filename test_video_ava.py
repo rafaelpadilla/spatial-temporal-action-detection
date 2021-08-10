@@ -37,18 +37,6 @@ if cfg.TRAIN.RESUME_PATH:
     print("===================================================================")
     del checkpoint
 
-    # if cfg.TRAIN.RESUME_PATH:
-    #     print("\n===================================================================")
-    #     print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
-    #     checkpoint = torch.load(cfg.TRAIN.RESUME_PATH)
-    #     cfg.TRAIN.BEGIN_EPOCH = checkpoint['epoch'] + 1
-    #     best_score = checkpoint['score']
-    #     model.load_state_dict(checkpoint['state_dict'])
-    #     optimizer.load_state_dict(checkpoint['optimizer'])
-    #     print("Loaded model score: ", checkpoint['score'])
-    #     print("===================================================================\n")
-    #     del checkpoint
-
 ####### Test parameters
 # ---------------------------------------------------------------
 
@@ -65,12 +53,12 @@ model.eval()
 
 ####### Data preparation and inference 
 # ---------------------------------------------------------------
-video_path = 'datasets/AVA/video_done/demo.mp4'
+video_path = 'datasets/AVA/video_done/basketball.mp4'
 cap = cv2.VideoCapture(video_path)
 cnt = 1
 queue = []
 while(cap.isOpened()):
-    print("cnt:, len(queue): ", cnt, len(queue))
+    # print("cnt:, len(queue): ", cnt, len(queue))
     ret, frame = cap.read()
 
     if len(queue) <= 0: # At initialization, populate queue with initial frame
@@ -124,11 +112,11 @@ while(cap.isOpened()):
 
         preds = []
         all_boxes = get_region_boxes_ava(output, conf_thresh_valid, num_classes, anchors, num_anchors, 0, 1)
-        print("step1, box amount: ", len(all_boxes))
+        # print("step1, box amount: ", len(all_boxes))
         for i in range(output.size(0)):
             boxes = all_boxes[i]
             boxes = nms(boxes, nms_thresh)
-            print("step2, box amount: ", len(boxes))
+            # print("step2, box amount: ", len(boxes))
             
             for box in boxes:
                 x1 = float(box[0]-box[2]/2.0)
@@ -136,10 +124,16 @@ while(cap.isOpened()):
                 x2 = float(box[0]+box[2]/2.0)
                 y2 = float(box[1]+box[3]/2.0)
                 det_conf = float(box[4])
-                print("conf: ", det_conf)
+                # print("x1: {}, y1: {}, x2: {}, y2: {}".format(x1, y1, x2, y2))
+                # print("conf: ", det_conf)
+                # print("box[5]: ", box[5])
                 cls_out = [det_conf * x.cpu().numpy() for x in box[5]]
+                # print("cls_out: ", cls_out)
                 preds.append([[x1,y1,x2,y2], cls_out])
+            # print("@@@@@ preds shape: ", np.shape(preds))
+            # print("@@@@@ preds: ", preds)
 
+    
     # for line in preds:
     # 	print(line)
     for dets in preds:
@@ -148,10 +142,17 @@ while(cap.isOpened()):
         x2 = int(dets[0][2] * crop_size)
         y2 = int(dets[0][3] * crop_size) 
         cls_scores = np.array(dets[1])
+        # print("@@@@@ cls_scores shape: ", np.shape(cls_scores)) # 80, class amount
+        # print("@@@@@ cls_scores: ", cls_scores)
         indices = np.where(cls_scores>0.4)
+        # print("@@@@@ indices shape: ", np.shape(indices)) 
+        # print("@@@@@ indices: ", indices)
+
         scores = cls_scores[indices]
         indices = list(indices[0])
         scores = list(scores)
+        print("@@@@@ scores: ", scores)
+        print("@@@@@ indices: ", indices)
         cv2.rectangle(frame, (x1,y1), (x2,y2), (0,255,0), 2)
         if len(scores) > 0:
             blk   = np.zeros(frame.shape, np.uint8)
@@ -161,7 +162,9 @@ while(cap.isOpened()):
             text_size = []
             # scores, indices  = [list(a) for a in zip(*sorted(zip(scores,indices), reverse=True))] # if you want, you can sort according to confidence level
             for _, cls_ind in enumerate(indices):
-                text.append("[{:.2f}] ".format(scores[_]) + str(labelmap[cls_ind]['name']))
+                print("##### index:{}, cls_ind:{} class:{}".format(_, cls_ind,  str(labelmap[cls_ind]['name'])))
+                text.append("[{:.2f}] ".format(scores[_]) + str(cls_ind))
+                # text.append("[{:.2f}] ".format(scores[_]) + str(labelmap[cls_ind]['name']))
                 text_size.append(cv2.getTextSize(text[-1], font, fontScale=0.25, thickness=1)[0])
                 coord.append((x1+3, y1+7+10*_))
                 cv2.rectangle(blk, (coord[-1][0]-1, coord[-1][1]-6), (coord[-1][0]+text_size[-1][0]+1, coord[-1][1]+text_size[-1][1]-4), (0, 255, 0), cv2.FILLED)

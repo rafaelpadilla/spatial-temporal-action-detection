@@ -36,32 +36,10 @@ if use_cuda:
 
 
 ####### Create optimizer
-# ---------------------------------------------------------------
 parameters = get_fine_tuning_parameters(model, cfg)
 optimizer = torch.optim.Adam(parameters, lr=cfg.TRAIN.LEARNING_RATE, weight_decay=cfg.SOLVER.WEIGHT_DECAY)
 best_score   = 0 # initialize best score
 
-####### Load resume path if necessary
-# ---------------------------------------------------------------
-# if cfg.TRAIN.RESUME_PATH:
-#     print("===================================================================")
-#     print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
-#     checkpoint = torch.load(cfg.TRAIN.RESUME_PATH)
-#     # cfg.TRAIN.BEGIN_EPOCH = checkpoint['epoch'] + 1
-#     # best_score = checkpoint['score']
-#     model.load_state_dict(checkpoint['state_dict'])
-#     print("===================================================================")
-#     del checkpoint
-
-# if cfg.TRAIN.RESUME_PATH:
-#     print("===================================================================")
-#     print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
-#     checkpoint = torch.load(cfg.TRAIN.RESUME_PATH)
-#     model.load_state_dict(checkpoint['state_dict'])
-#     model.eval()
-#     print("Model loaded!")
-#     print("===================================================================")
-#     del checkpoint
 
 if cfg.TRAIN.RESUME_PATH:
     print("===================================================================")
@@ -79,35 +57,39 @@ if cfg.TRAIN.RESUME_PATH:
 ####### Test parameters
 # ---------------------------------------------------------------
 
-labelmap, _       = read_labelmap("datasets/AVA/annotations/ava_action_list_v2.1.pbtxt")
 num_classes       = cfg.MODEL.NUM_CLASSES
 clip_length		  = cfg.DATA.NUM_FRAMES
 crop_size 		  = cfg.DATA.TEST_CROP_SIZE
 anchors           = [float(i) for i in cfg.SOLVER.ANCHORS]
 num_anchors       = cfg.SOLVER.NUM_ANCHORS
 nms_thresh        = 0.5
-# conf_thresh_valid = 0.5 # For more stable results, this threshold is increased!
-conf_thresh_valid = 0.5 # For more stable results, this threshold is increased!
+
+
+# Test parameters
+nms_thresh    = 0.1
+conf_thresh_valid = 0.2 # For more stable results, this threshold is increased!
+# conf_thresh_valid = 0.005
 
 model.eval()
 
+print("num_classes: {}".format(num_classes))
+print("anchors: {}".format(anchors))
+print("num_anchors: {}".format(num_anchors))
+print("crop_size: {}".format(crop_size))
 
-gt_file       = 'cfg/ucf24_finalAnnots.mat' # Necessary for ucf
-base_path     = cfg.LISTDATA.BASE_PTH
-# Test parameters
-conf_thresh   = 0.005
-nms_thresh    = 0.4
-eps           = 1e-5
+
+# gt_file       = 'cfg/ucf24_finalAnnots.mat' # Necessary for ucf
+# base_path     = cfg.LISTDATA.BASE_PTH
 
 ####### Data preparation and inference 
 # ---------------------------------------------------------------
-video_path = 'datasets/AVA/video_done/soccer.mp4'
+video_path = 'datasets/AVA/video_done/basketball.mp4'
 cap = cv2.VideoCapture(video_path)
 cnt = 1
 count = 1
 queue = []
 while(cap.isOpened()):
-    print("test")
+    print("frame***")
     ret, frame = cap.read()
     print(count, len(queue))
     count += 1
@@ -162,8 +144,8 @@ while(cap.isOpened()):
         # output = output.data
 
         preds = []
-        # all_boxes = get_region_boxes_ava(output, conf_thresh_valid, num_classes, anchors, num_anchors, 0, 1)
-        all_boxes = get_region_boxes(output, conf_thresh_valid, num_classes, anchors, num_anchors, 0, 1)
+        all_boxes = get_region_boxes_ava(output, conf_thresh_valid, num_classes, anchors, num_anchors, 0, 1)
+        # all_boxes = get_region_boxes(output, conf_thresh_valid, num_classes, anchors, num_anchors, 0, 1)
         for i in range(output.size(0)):
             boxes = all_boxes[i]
             boxes = nms(boxes, nms_thresh)
@@ -174,9 +156,17 @@ while(cap.isOpened()):
                 y1 = float(box[1]-box[3]/2.0)
                 x2 = float(box[0]+box[2]/2.0)
                 y2 = float(box[1]+box[3]/2.0)
+                # x1 = round(float(box[0]-box[2]/2.0) * 320.0)
+                # y1 = round(float(box[1]-box[3]/2.0) * 240.0)
+                # x2 = round(float(box[0]+box[2]/2.0) * 320.0)
+                # y2 = round(float(box[1]+box[3]/2.0) * 240.0)
                 det_conf = float(box[4])
+                # print("x1: {}, y1: {}, x2: {}, y2: {}".format(x1, y1, x2, y2))
+                # print("conf: ", det_conf)
+                # print("box[5]: ", box[5])
                 cls_out = [det_conf * x.cpu().numpy() for x in box[5]]
                 preds.append([[x1,y1,x2,y2], cls_out])
+            # print("*************preds: ", preds)
 
     # for line in preds:
     # 	print(line)
@@ -186,10 +176,14 @@ while(cap.isOpened()):
         x2 = int(dets[0][2] * crop_size)
         y2 = int(dets[0][3] * crop_size) 
         cls_scores = np.array(dets[1])
-        indices = np.where(cls_scores>0.4)
+        # print("cls_scores: ", cls_scores)
+        indices = np.where(cls_scores>0.15)
         scores = cls_scores[indices]
         indices = list(indices[0])
         scores = list(scores)
+        print("@@@@@ scores: ", scores)
+        print("@@@@@ indices: ", indices)
+
         cv2.rectangle(frame, (x1,y1), (x2,y2), (0,255,0), 2)
         if len(scores) > 0:
             blk   = np.zeros(frame.shape, np.uint8)
@@ -199,7 +193,8 @@ while(cap.isOpened()):
             text_size = []
             # scores, indices  = [list(a) for a in zip(*sorted(zip(scores,indices), reverse=True))] # if you want, you can sort according to confidence level
             for _, cls_ind in enumerate(indices):
-                text.append("[{:.2f}] ".format(scores[_]) + str(labelmap[cls_ind]['name']))
+                print("##### index:{}, cls_ind:{} class:{}".format(_, cls_ind,  str([cls_ind])))
+                text.append("[{:.2f}] ".format(scores[_]) + str([cls_ind]))
                 text_size.append(cv2.getTextSize(text[-1], font, fontScale=0.25, thickness=1)[0])
                 coord.append((x1+3, y1+7+10*_))
                 cv2.rectangle(blk, (coord[-1][0]-1, coord[-1][1]-6), (coord[-1][0]+text_size[-1][0]+1, coord[-1][1]+text_size[-1][1]-4), (0, 255, 0), cv2.FILLED)

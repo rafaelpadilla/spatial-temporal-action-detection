@@ -141,9 +141,11 @@ def fill_truth_detection(labpath, w, h, flip, dx, dy, sx, sy):
 def load_data_detection(base_path, imgpath, train, train_dur, sampling_rate, shape, dataset_use='ucf24', jitter=0.2, hue=0.1, saturation=1.5, exposure=1.5):
     # clip loading and  data augmentation
 
-    im_split = imgpath.split('/') # get img path and label path
+    im_split = imgpath.split('/') # get img path and label path (trainlist.txt testlist.txt)
+    # print("im_split: ", im_split) # 'Basketball', 'v_Basketball_g01_c01', '00019.txt'
     num_parts = len(im_split)
-    im_ind = int(im_split[num_parts-1][0:5]) # 56? frame ID in the video
+    im_ind = int(im_split[num_parts-1][0:5]) # frame index in the video
+    # print("im_ind: ", im_ind)
     labpath = os.path.join(base_path, 'labels', im_split[0], im_split[1] ,'{:05d}.txt'.format(im_ind))
 
     img_folder = os.path.join(base_path, 'rgb-images', im_split[0], im_split[1])
@@ -160,7 +162,7 @@ def load_data_detection(base_path, imgpath, train, train_dur, sampling_rate, sha
     d = sampling_rate # frame gap
     if train:
         d = random.randint(1, 2) 
-
+    # print("***************************************1\n")
     for i in reversed(range(train_dur)): # train_dur default 16
         # make it as a loop
         i_temp = im_ind - i * d
@@ -168,6 +170,7 @@ def load_data_detection(base_path, imgpath, train, train_dur, sampling_rate, sha
             i_temp = 1
         elif i_temp > max_num:
             i_temp = max_num
+        # print("im_ind: {}, i: {}, i_temp: {}".format(im_ind, i, i_temp))
 
         if dataset_use == 'ucf24':
             path_tmp = os.path.join(base_path, 'rgb-images', im_split[0], im_split[1] ,'{:05d}.jpg'.format(i_temp))
@@ -175,6 +178,7 @@ def load_data_detection(base_path, imgpath, train, train_dur, sampling_rate, sha
             path_tmp = os.path.join(base_path, 'rgb-images', im_split[0], im_split[1] ,'{:05d}.png'.format(i_temp))
 
         clip.append(Image.open(path_tmp).convert('RGB'))
+    # print("***************************************2\n")
 
     if train: # Apply augmentation
         clip,flip,dx,dy,sx,sy = data_augmentation(clip, shape, jitter, hue, saturation, exposure)
@@ -184,15 +188,18 @@ def load_data_detection(base_path, imgpath, train, train_dur, sampling_rate, sha
 
     else: # No augmentation
         label = torch.zeros(50*5)
+        # print("labpath: {}, 8.0/clip[0].width: {}".format(labpath, 8.0/clip[0].width))
         try:
             tmp = torch.from_numpy(read_truths_args(labpath, 8.0/clip[0].width).astype('float32'))
         except Exception:
             tmp = torch.zeros(1,5)
-
+        # print("tmp1: ", tmp)
         tmp = tmp.view(-1)
         tsz = tmp.numel()
+        # print("tmp2: ", tmp)
+        # print("tsz: ", tsz)
 
-        if tsz > 50*5:
+        if tsz > 50*5: # label can only save 50 targets
             label = tmp[0:50*5]
         elif tsz > 0:
             label[0:tsz] = tmp

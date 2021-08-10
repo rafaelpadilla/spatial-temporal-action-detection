@@ -67,6 +67,7 @@ class UCF_JHMDB_Dataset(Dataset):
                                                          self.dataset)
 
             clip = [img.resize(self.shape) for img in clip]
+        # print("len clip and label: ", len(clip), len(label))
 
         if self.transform is not None:
             clip = [self.transform(img) for img in clip]

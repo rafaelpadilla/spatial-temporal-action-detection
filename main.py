@@ -94,14 +94,20 @@ if __name__ == '__main__':
                         shape=(cfg.DATA.TRAIN_CROP_SIZE, cfg.DATA.TRAIN_CROP_SIZE),
                         transform=transforms.Compose([transforms.ToTensor()]), 
                         train=True, clip_duration=cfg.DATA.NUM_FRAMES, sampling_rate=cfg.DATA.SAMPLING_RATE)
+        print("##### len(train_dataset): ", len(train_dataset)) # trainlist.txt items amount "Basketball/v_Basketball_g15_c05/00064.txt"
+        train_loader  = torch.utils.data.DataLoader(train_dataset, batch_size= cfg.TRAIN.BATCH_SIZE, shuffle=True,
+                                                num_workers=cfg.DATA_LOADER.NUM_WORKERS, drop_last=True, pin_memory=True)
+        print("##### len(train_loader): ", len(train_loader))
+    
         test_dataset  = list_dataset.UCF_JHMDB_Dataset(cfg.LISTDATA.BASE_PTH, cfg.LISTDATA.TEST_FILE, dataset=dataset,
                         shape=(cfg.DATA.TRAIN_CROP_SIZE, cfg.DATA.TRAIN_CROP_SIZE),
                         transform=transforms.Compose([transforms.ToTensor()]), 
                         train=False, clip_duration=cfg.DATA.NUM_FRAMES, sampling_rate=cfg.DATA.SAMPLING_RATE)
-        train_loader  = torch.utils.data.DataLoader(train_dataset, batch_size= cfg.TRAIN.BATCH_SIZE, shuffle=True,
-                                                num_workers=cfg.DATA_LOADER.NUM_WORKERS, drop_last=True, pin_memory=True)
+        print("@@@@@ len(test_dataset): ", len(test_dataset))
         test_loader   = torch.utils.data.DataLoader(test_dataset, batch_size= cfg.TRAIN.BATCH_SIZE, shuffle=False,
                                                 num_workers=cfg.DATA_LOADER.NUM_WORKERS, drop_last=False, pin_memory=True)
+        print("##### len(test_loader): ", len(test_loader))
+        
         loss_module   = RegionLoss(cfg).cuda()
 
         train = getattr(sys.modules[__name__], 'train_ucf24_jhmdb21')
