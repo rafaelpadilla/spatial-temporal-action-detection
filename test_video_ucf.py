@@ -5,8 +5,6 @@ import torch
 import torch.nn as nn
 
 from datasets import cv2_transform
-from datasets.ava_eval_helper import read_labelmap 
-from datasets.meters import AVAMeter
 from core.optimization import *
 from cfg import parser
 from core.utils import *
@@ -42,34 +40,23 @@ best_score   = 0 # initialize best score
 
 
 if cfg.TRAIN.RESUME_PATH:
-    print("===================================================================")
     print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
     checkpoint = torch.load(cfg.TRAIN.RESUME_PATH)
-    cfg.TRAIN.BEGIN_EPOCH = checkpoint['epoch'] + 1
-    best_score = checkpoint['score']
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
-    print("Loaded model score: ", checkpoint['score'])
-    print("===================================================================")
     del checkpoint
 
 
 ####### Test parameters
-# ---------------------------------------------------------------
-
-num_classes       = cfg.MODEL.NUM_CLASSES
-clip_length		  = cfg.DATA.NUM_FRAMES
-crop_size 		  = cfg.DATA.TEST_CROP_SIZE
+num_classes       = cfg.MODEL.NUM_CLASSES # class amount
+clip_length		  = cfg.DATA.NUM_FRAMES  # image batches
+crop_size 		  = cfg.DATA.TEST_CROP_SIZE # ? resizing
 anchors           = [float(i) for i in cfg.SOLVER.ANCHORS]
 num_anchors       = cfg.SOLVER.NUM_ANCHORS
-nms_thresh        = 0.5
 
-
-# Test parameters
-nms_thresh    = 0.1
-conf_thresh_valid = 0.2 # For more stable results, this threshold is increased!
+nms_thresh    = 0.1 # orginal 0.5
 # conf_thresh_valid = 0.005
-
+conf_thresh_valid = 0.2 # For more stable results, this threshold should be increased!
 model.eval()
 
 print("num_classes: {}".format(num_classes))
@@ -77,9 +64,6 @@ print("anchors: {}".format(anchors))
 print("num_anchors: {}".format(num_anchors))
 print("crop_size: {}".format(crop_size))
 
-
-# gt_file       = 'cfg/ucf24_finalAnnots.mat' # Necessary for ucf
-# base_path     = cfg.LISTDATA.BASE_PTH
 
 ####### Data preparation and inference 
 # ---------------------------------------------------------------
@@ -105,6 +89,8 @@ while(cap.isOpened()):
     # Resize images
     imgs = [cv2_transform.resize(crop_size, img) for img in queue]
     frame = img = cv2.resize(frame, (crop_size, crop_size), interpolation=cv2.INTER_LINEAR)
+    print("frame size: ", np.shape(frame))
+    
 
     # Convert image to CHW keeping BGR order.
     imgs = [cv2_transform.HWC2CHW(img) for img in imgs]
