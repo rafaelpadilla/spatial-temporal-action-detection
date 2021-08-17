@@ -67,7 +67,7 @@ print("crop_size: {}".format(crop_size))
 
 ####### Data preparation and inference 
 # ---------------------------------------------------------------
-video_path = 'datasets/AVA/video_done/basketball.mp4'
+video_path = 'datasets/AVA/video_done/basketball.avi'
 cap = cv2.VideoCapture(video_path)
 cnt = 1
 count = 1
@@ -163,7 +163,7 @@ while(cap.isOpened()):
         y2 = int(dets[0][3] * crop_size) 
         cls_scores = np.array(dets[1])
         # print("cls_scores: ", cls_scores)
-        indices = np.where(cls_scores>0.15)
+        indices = np.where(cls_scores>0.1)
         scores = cls_scores[indices]
         indices = list(indices[0])
         scores = list(scores)

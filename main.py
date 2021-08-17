@@ -58,9 +58,7 @@ if __name__ == '__main__':
 
 
     ####### Load resume path if necessary
-    # ---------------------------------------------------------------
     if cfg.TRAIN.RESUME_PATH:
-        print("===================================================================")
         print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
         checkpoint = torch.load(cfg.TRAIN.RESUME_PATH)
         cfg.TRAIN.BEGIN_EPOCH = checkpoint['epoch'] + 1
@@ -68,7 +66,6 @@ if __name__ == '__main__':
         model.load_state_dict(checkpoint['state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
         print("Loaded model score: ", checkpoint['score'])
-        print("===================================================================")
         del checkpoint
 
 
@@ -103,7 +100,8 @@ if __name__ == '__main__':
                         shape=(cfg.DATA.TRAIN_CROP_SIZE, cfg.DATA.TRAIN_CROP_SIZE),
                         transform=transforms.Compose([transforms.ToTensor()]), 
                         train=False, clip_duration=cfg.DATA.NUM_FRAMES, sampling_rate=cfg.DATA.SAMPLING_RATE)
-        print("@@@@@ len(test_dataset): ", len(test_dataset))
+        print("##### len(test_dataset): ", len(test_dataset))
+        # print("test dataset len: ", test_dataset.__len__())
         test_loader   = torch.utils.data.DataLoader(test_dataset, batch_size= cfg.TRAIN.BATCH_SIZE, shuffle=False,
                                                 num_workers=cfg.DATA_LOADER.NUM_WORKERS, drop_last=False, pin_memory=True)
         print("##### len(test_loader): ", len(test_loader))

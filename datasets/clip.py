@@ -139,6 +139,7 @@ def fill_truth_detection(labpath, w, h, flip, dx, dy, sx, sy):
     return label
 
 def load_data_detection(base_path, imgpath, train, train_dur, sampling_rate, shape, dataset_use='ucf24', jitter=0.2, hue=0.1, saturation=1.5, exposure=1.5):
+    # print("222222222222222222222222222222222222222222222222")
     # clip loading and  data augmentation
 
     im_split = imgpath.split('/') # get img path and label path (trainlist.txt testlist.txt)
@@ -147,8 +148,9 @@ def load_data_detection(base_path, imgpath, train, train_dur, sampling_rate, sha
     im_ind = int(im_split[num_parts-1][0:5]) # frame index in the video
     # print("im_ind: ", im_ind)
     labpath = os.path.join(base_path, 'labels', im_split[0], im_split[1] ,'{:05d}.txt'.format(im_ind))
-
+    # print("\n &&&&&&&&& labpath: ", labpath)
     img_folder = os.path.join(base_path, 'rgb-images', im_split[0], im_split[1])
+    # print("\n img_folder: ", img_folder)
     if dataset_use == 'ucf24':
         max_num = len(os.listdir(img_folder))
     elif dataset_use == 'jhmdb21':
@@ -170,7 +172,7 @@ def load_data_detection(base_path, imgpath, train, train_dur, sampling_rate, sha
             i_temp = 1
         elif i_temp > max_num:
             i_temp = max_num
-        # print("im_ind: {}, i: {}, i_temp: {}".format(im_ind, i, i_temp))
+        # print("im_ind: {}, i: {}, i_temp: {}".format(im_ind, i, i_temp)) # if index=0, labeltxt=9, 1111111 + 123456789
 
         if dataset_use == 'ucf24':
             path_tmp = os.path.join(base_path, 'rgb-images', im_split[0], im_split[1] ,'{:05d}.jpg'.format(i_temp))
@@ -193,10 +195,10 @@ def load_data_detection(base_path, imgpath, train, train_dur, sampling_rate, sha
             tmp = torch.from_numpy(read_truths_args(labpath, 8.0/clip[0].width).astype('float32'))
         except Exception:
             tmp = torch.zeros(1,5)
-        # print("tmp1: ", tmp)
+        # print("tmp: ", tmp) # tmp:  tensor([[0.0000, 0.6609, 0.5833, 0.1469, 0.3250]])
         tmp = tmp.view(-1)
         tsz = tmp.numel()
-        # print("tmp2: ", tmp)
+        # print("tmp2: ", tmp) # tmp2:  tensor([0.0000, 0.6609, 0.5833, 0.1469, 0.3250])
         # print("tsz: ", tsz)
 
         if tsz > 50*5: # label can only save 50 targets

@@ -136,26 +136,20 @@ def test_ucf24_jhmdb21(cfg, epoch, model, test_loader):
     print("anchors: {}".format(anchors))
     print("num_anchors: {}".format(num_anchors))
     # print("num_classes: {}".format())
-
-
-
     correct_classification = 0.0
     total_detected = 0.0
-
     nbatch = len(test_loader)
-    print("@@@@@@@@@@@@@@@@@@@ nbatch: ", nbatch)
-
+    print("nbatch: ", nbatch)
     model.eval()
-    count = 0
-    for batch_idx, (frame_idx, data, target) in enumerate(test_loader):
-        if count == 0:
-            print("batch_idx: ", batch_idx)
-            print("frame_idx: ", frame_idx)
-            print("data: ", data.shape)
-            print("target: ", target.shape)
-            # print("data: ", data)
-            # print("target: ", target)
-        count += 1
+    print("1111111111111111111111111111111111111111111111111111111111111111111111")
+
+    for batch_idx, (frame_idx, data, target) in enumerate(test_loader): # related to class UCF_JHMDB_Dataset __getitem__
+        # print("@@@@@@@@@@@@@@@@@@@@@@ batch_idx: ", batch_idx) # 0~11 if len is 12
+        # print("@@@@@@ frame_idx: ", frame_idx) # ['Basketball_v_Basketball_g01_c01_00009.txt', 'Basketball_v_Basketball_g01_c01_00010.txt']
+        # print("data: ", data.shape) # torch.Size([2, 3, 16, 224, 224])
+        # print("target: ", target.shape) # torch.Size([2, 250])
+        # print("data: ", data)
+        # print("target: ", target)
         data = data.cuda()
         with torch.no_grad():
             output = model(data).data # model output, 4 ∗ 145 ∗ 7 ∗ 7
@@ -163,7 +157,7 @@ def test_ucf24_jhmdb21(cfg, epoch, model, test_loader):
             for i in range(output.size(0)):
                 boxes = all_boxes[i]
                 boxes = nms(boxes, nms_thresh)
-                print(" len of boxes: ", len(boxes))
+                # print(" len of boxes: ", len(boxes))
 
                 if cfg.TRAIN.DATASET == 'ucf24':
                     detection_path = os.path.join('ucf_detections', 'detections_'+str(epoch), frame_idx[i])

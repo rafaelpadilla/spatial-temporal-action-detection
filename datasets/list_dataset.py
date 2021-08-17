@@ -36,6 +36,7 @@ class UCF_JHMDB_Dataset(Dataset):
         return self.nSamples
 
     def __getitem__(self, index):
+        # print("!!!!!here is __getitem__ &&& index: ", index)
         assert index <= len(self), 'index range error'
         imgpath = self.lines[index].rstrip()
 

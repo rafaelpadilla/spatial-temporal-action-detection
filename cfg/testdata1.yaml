@@ -1,11 +1,11 @@
 TRAIN:
-  RESUME_PATH: "backup/ucf24/yowo_ucf24_16f_best.pth"
-  # RESUME_PATH: ""
+  # RESUME_PATH: "backup/ucf24/yowo_ucf24_16f_best.pth"
+  RESUME_PATH: ""
   DATASET: ucf24  # `ava`, `ucf24` or `jhmdb21`
   BATCH_SIZE: 2
   TOTAL_BATCH_SIZE: 128
   LEARNING_RATE: 1e-4
-  EVALUATE: True
+  EVALUATE: False
   FINE_TUNE: False
   BEGIN_EPOCH: 1
   END_EPOCH: 3
@@ -40,10 +40,10 @@ WEIGHTS:
   FREEZE_BACKBONE_3D: False
   FREEZE_BACKBONE_2D: False
 LISTDATA:
-  BASE_PTH: "datasets/ucf24"
-  TRAIN_FILE: "datasets/ucf24/trainlist_less.txt"
-  TEST_FILE: "datasets/ucf24/testlist_less.txt"
-  TEST_VIDEO_FILE: "datasets/ucf24/testlist_video.txt"
+  BASE_PTH: "datasets/testdata1"
+  TRAIN_FILE: "datasets/testdata1/trainlist_less.txt"
+  TEST_FILE: "datasets/testdata1/testlist_less.txt"
+  TEST_VIDEO_FILE: "datasets/testdata1/testlist_video.txt"
   MAX_OBJS: 6
   CLASS_NAMES: [
     "Basketball", "BasketballDunk", "Biking", "CliffDiving", "CricketBowling", 
@@ -52,5 +52,5 @@ LISTDATA:
     "SkateBoarding", "Skiing", "Skijet", "SoccerJuggling", "Surfing",
     "TennisSwing", "TrampolineJumping", "VolleyballSpiking", "WalkingWithDog"
   ]
-BACKUP_DIR: "backup/ucf24"
+BACKUP_DIR: "backup/testdata1"
 RNG_SEED: 1
