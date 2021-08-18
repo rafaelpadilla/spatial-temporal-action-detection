@@ -57,16 +57,16 @@ if __name__ == '__main__':
     # optimizer = optim.SGD(parameters, lr=cfg.TRAIN.LEARNING_RATE/batch_size, momentum=cfg.SOLVER.MOMENTUM, dampening=0, weight_decay=cfg.SOLVER.WEIGHT_DECAY)
 
 
-    ####### Load resume path if necessary
-    if cfg.TRAIN.RESUME_PATH:
-        print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
-        checkpoint = torch.load(cfg.TRAIN.RESUME_PATH)
-        cfg.TRAIN.BEGIN_EPOCH = checkpoint['epoch'] + 1
-        best_score = checkpoint['score']
-        model.load_state_dict(checkpoint['state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        print("Loaded model score: ", checkpoint['score'])
-        del checkpoint
+    # ####### Load resume path if necessary
+    # if cfg.TRAIN.RESUME_PATH:
+    #     print('loading checkpoint {}'.format(cfg.TRAIN.RESUME_PATH))
+    #     checkpoint = torch.load(cfg.TRAIN.RESUME_PATH)
+    #     cfg.TRAIN.BEGIN_EPOCH = checkpoint['epoch'] + 1
+    #     best_score = checkpoint['score']
+    #     model.load_state_dict(checkpoint['state_dict'])
+    #     optimizer.load_state_dict(checkpoint['optimizer'])
+    #     print("Loaded model score: ", checkpoint['score'])
+    #     del checkpoint
 
 
     ####### Data loader, training scheme and loss function are different for AVA and UCF24/JHMDB21 datasets

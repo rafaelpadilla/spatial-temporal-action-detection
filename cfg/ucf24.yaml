@@ -1,11 +1,11 @@
 TRAIN:
-  RESUME_PATH: "backup/ucf24/yowo_ucf24_16f_best.pth"
+  RESUME_PATH: "backup/ucf24/yowo_ucf24_16f_best_tested.pth"
   # RESUME_PATH: ""
   DATASET: ucf24  # `ava`, `ucf24` or `jhmdb21`
   BATCH_SIZE: 2
   TOTAL_BATCH_SIZE: 128
   LEARNING_RATE: 1e-4
-  EVALUATE: True
+  EVALUATE: False
   FINE_TUNE: False
   BEGIN_EPOCH: 1
   END_EPOCH: 3

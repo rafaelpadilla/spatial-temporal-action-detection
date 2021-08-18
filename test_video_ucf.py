@@ -73,9 +73,8 @@ cnt = 1
 count = 1
 queue = []
 while(cap.isOpened()):
-    print("frame***")
+    print("frame NO: ", cnt)
     ret, frame = cap.read()
-    print(count, len(queue))
     count += 1
 
     if len(queue) <= 0: # At initialization, populate queue with initial frame
@@ -89,7 +88,7 @@ while(cap.isOpened()):
     # Resize images
     imgs = [cv2_transform.resize(crop_size, img) for img in queue]
     frame = img = cv2.resize(frame, (crop_size, crop_size), interpolation=cv2.INTER_LINEAR)
-    print("frame size: ", np.shape(frame))
+    # print("frame size: ", np.shape(frame))
     
 
     # Convert image to CHW keeping BGR order.
@@ -126,7 +125,7 @@ while(cap.isOpened()):
 
     # # Model inference
     with torch.no_grad():
-        output = model(imgs)
+        output = model(imgs)  # shape 4 ∗ 145 ∗ 7 ∗ 7
         # output = output.data
 
         preds = []
@@ -147,12 +146,16 @@ while(cap.isOpened()):
                 # x2 = round(float(box[0]+box[2]/2.0) * 320.0)
                 # y2 = round(float(box[1]+box[3]/2.0) * 240.0)
                 det_conf = float(box[4])
-                # print("x1: {}, y1: {}, x2: {}, y2: {}".format(x1, y1, x2, y2))
-                # print("conf: ", det_conf)
-                # print("box[5]: ", box[5])
-                cls_out = [det_conf * x.cpu().numpy() for x in box[5]]
+                # box[0123] related to bounding box, box[4]=预测框的置信度 box[5] length is 24
+                # print("box[0]:{}, box[1]:{}, box[2]:{}, box[3]:{}, box[4]:{}, box[5]:{}", 
+                #     box[0], box[1], box[2], box[3], box[4], box[5])
+                print("x1: {}, y1: {}, x2: {}, y2: {}".format(x1, y1, x2, y2))
+                print("conf: ", det_conf)
+                print("box[5]: ", box[5]) # length 24
+                cls_out = [det_conf * x.cpu().numpy() for x in box[5]] # length 24
+                print("cls_out： ", cls_out)
                 preds.append([[x1,y1,x2,y2], cls_out])
-            # print("*************preds: ", preds)
+            print("*************preds: ", preds)
 
     # for line in preds:
     # 	print(line)
@@ -167,8 +170,8 @@ while(cap.isOpened()):
         scores = cls_scores[indices]
         indices = list(indices[0])
         scores = list(scores)
-        print("@@@@@ scores: ", scores)
-        print("@@@@@ indices: ", indices)
+        # print("@@@@@ scores: ", scores)
+        # print("@@@@@ indices: ", indices)
 
         cv2.rectangle(frame, (x1,y1), (x2,y2), (0,255,0), 2)
         if len(scores) > 0:
