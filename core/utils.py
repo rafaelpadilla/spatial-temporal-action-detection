@@ -343,9 +343,14 @@ def get_region_boxes(output, conf_thresh, num_classes, anchors, num_anchors, onl
 
 
 def get_region_boxes_ava(output, conf_thresh, num_classes, anchors, num_anchors, only_objectness=1, validation=False):
+    print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+    print("output shape: ", np.shape(output)) # shape: [1, 145, 7, 7]
     anchor_step = len(anchors)//num_anchors
+    print("anchor_step: {}, len(anchors): {}, num_anchors: {}".format(anchor_step, len(anchors),  num_anchors))
     if output.dim() == 3:
         output = output.unsqueeze(0)
+
+    # output.size(0)=1, output.size(1)=145, output.size(2)=7, output.size(3)=7
     batch = output.size(0)
     assert(output.size(1) == (5+num_classes)*num_anchors)
     h = output.size(2)
@@ -353,7 +358,9 @@ def get_region_boxes_ava(output, conf_thresh, num_classes, anchors, num_anchors,
 
     t0 = time.time()
     all_boxes = []
-    output = output.view(batch*num_anchors, 5+num_classes, h*w).transpose(0,1).contiguous().view(5+num_classes, batch*num_anchors*h*w)
+    # batch*num_anchors = 5, 5+num_classes = 29, h*w = 49
+    output = output.view(batch*num_anchors, 5+num_classes, h*w).transpose(0,1).contiguous().view(5+num_classes, batch*num_anchors*h*w) 
+    print("new output shape: ", np.shape(output)) # [29, 245]
 
     grid_x = torch.linspace(0, w-1, w).repeat(h,1).repeat(batch*num_anchors, 1, 1).view(batch*num_anchors*h*w).cuda()
     grid_y = torch.linspace(0, h-1, h).repeat(w,1).t().repeat(batch*num_anchors, 1, 1).view(batch*num_anchors*h*w).cuda()
@@ -364,6 +371,7 @@ def get_region_boxes_ava(output, conf_thresh, num_classes, anchors, num_anchors,
     anchor_h = torch.Tensor(anchors).view(num_anchors, anchor_step).index_select(1, torch.LongTensor([1]))
     anchor_w = anchor_w.repeat(batch, 1).repeat(1, 1, h*w).view(batch*num_anchors*h*w).cuda()
     anchor_h = anchor_h.repeat(batch, 1).repeat(1, 1, h*w).view(batch*num_anchors*h*w).cuda()
+    print("anchor_w shape: ", np.shape(anchor_w))
     ws = torch.exp(output[2]) * anchor_w
     hs = torch.exp(output[3]) * anchor_h
 
@@ -384,6 +392,7 @@ def get_region_boxes_ava(output, conf_thresh, num_classes, anchors, num_anchors,
     if validation:
         cls_confs = convert2cpu(cls_confs.view(-1, num_classes))
     t2 = time.time()
+    
     for b in range(batch):
         boxes = []
         for cy in range(h):
