@@ -39,8 +39,6 @@ MANIFEST
 # log files
 *.log
 
-# text files
-*.txt
 
 # image files
 *.jpg
@@ -50,6 +48,8 @@ backup/
 ucf_detections/
 jhmdb_detections/
 weights/
+datasets/ucf24/labels
+
 
 # Installer logs
 pip-log.txt
