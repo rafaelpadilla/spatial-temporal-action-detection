@@ -139,16 +139,15 @@ def fill_truth_detection(labpath, w, h, flip, dx, dy, sx, sy):
     return label
 
 def load_data_detection(base_path, imgpath, train, train_dur, sampling_rate, shape, dataset_use='ucf24', jitter=0.2, hue=0.1, saturation=1.5, exposure=1.5):
-    # print("222222222222222222222222222222222222222222222222")
     # clip loading and  data augmentation
 
     im_split = imgpath.split('/') # get img path and label path (trainlist.txt testlist.txt)
-    # print("im_split: ", im_split) # 'Basketball', 'v_Basketball_g01_c01', '00019.txt'
+    # print("\nim_split: ", im_split) # 'Basketball', 'v_Basketball_g01_c01', '00019.txt'
     num_parts = len(im_split)
     im_ind = int(im_split[num_parts-1][0:5]) # frame index in the video
-    # print("im_ind: ", im_ind)
+    # print("\nim_ind: ", im_ind)
     labpath = os.path.join(base_path, 'labels', im_split[0], im_split[1] ,'{:05d}.txt'.format(im_ind))
-    # print("\n &&&&&&&&& labpath: ", labpath)
+    # print("\n labpath: ", labpath)
     img_folder = os.path.join(base_path, 'rgb-images', im_split[0], im_split[1])
     # print("\n img_folder: ", img_folder)
     if dataset_use == 'ucf24':
@@ -181,6 +180,74 @@ def load_data_detection(base_path, imgpath, train, train_dur, sampling_rate, sha
 
         clip.append(Image.open(path_tmp).convert('RGB'))
     # print("***************************************2\n")
+
+    if train: # Apply augmentation
+        clip,flip,dx,dy,sx,sy = data_augmentation(clip, shape, jitter, hue, saturation, exposure)
+        # class, xmin, ymin, xmax, ymax ​
+        label = fill_truth_detection(labpath, clip[0].width, clip[0].height, flip, dx, dy, 1./sx, 1./sy)
+        label = torch.from_numpy(label)
+
+    else: # No augmentation
+        label = torch.zeros(50*5)
+        # print("labpath: {}, 8.0/clip[0].width: {}".format(labpath, 8.0/clip[0].width))
+        try:
+            tmp = torch.from_numpy(read_truths_args(labpath, 8.0/clip[0].width).astype('float32'))
+        except Exception:
+            tmp = torch.zeros(1,5)
+        # print("tmp: ", tmp) # tmp:  tensor([[0.0000, 0.6609, 0.5833, 0.1469, 0.3250]])
+        tmp = tmp.view(-1)
+        tsz = tmp.numel()
+        # print("tmp2: ", tmp) # tmp2:  tensor([0.0000, 0.6609, 0.5833, 0.1469, 0.3250])
+        # print("tsz: ", tsz)
+
+        if tsz > 50*5: # label can only save 50 targets
+            label = tmp[0:50*5]
+        elif tsz > 0:
+            label[0:tsz] = tmp
+
+    if train:
+        return clip, label
+    else:
+        return im_split[0] + '_' +im_split[1] + '_' + im_split[2], clip, label
+
+
+def load_data_detection_ucsp(base_path, imgpath, train, train_dur, sampling_rate, shape, dataset_use='ucf24', jitter=0.2, hue=0.1, saturation=1.5, exposure=1.5):
+    # clip loading and  data augmentation
+    im_split = imgpath.split('/') # get img path and label path (trainlist.txt testlist.txt)
+    # print("\nim_split: ", im_split) # 'Basketball', 'v_Basketball_g01_c01', '00019.txt'
+    num_parts = len(im_split)
+    im_ind = int(im_split[num_parts-1][:-4]) # frame index in the video
+    # print("\nim_ind: ", im_ind)
+    # labpath = os.path.join(base_path, 'labels', im_split[0], im_split[1] ,'{:05d}.txt'.format(im_ind)) # UCSP
+    labpath = os.path.join(base_path, 'labels', im_split[0],'{:d}.txt'.format(im_ind))
+    # print("\n &&&&&&&&&$$$$$$$$$$$$$$$$$$$$$ labpath: ", labpath)
+    img_folder = os.path.join(base_path, 'rgb-images', im_split[0])
+    # print("\n img_folder: ", img_folder)
+    if dataset_use == 'ucsp':
+        max_num = len(os.listdir(img_folder))
+
+    clip = []
+
+    ### We change downsampling rate throughout training as a       ###
+    ### temporal augmentation, which brings around 1-2 frame       ###
+    ### mAP. During test time it is set to cfg.DATA.SAMPLING_RATE. ###
+    d = sampling_rate # frame gap
+    if train:
+        d = random.randint(1, 2) 
+    for i in reversed(range(train_dur)): # train_dur default 16
+        # make it as a loop
+        i_temp = im_ind - i * d
+        if i_temp < 1:
+            i_temp = 1
+        elif i_temp > max_num:
+            i_temp = max_num
+        # print("im_ind: {}, i: {}, i_temp: {}".format(im_ind, i, i_temp)) # if index=0, labeltxt=9, 1111111 + 123456789
+
+        if dataset_use == 'ucsp':
+            path_tmp = os.path.join(base_path, 'rgb-images', im_split[0], '{}.jpg'.format(i_temp))
+            # print("&&&&&&&&&&&&&&&&& path_temp: {}, i_temp: {}".format(path_tmp, i_temp))
+       
+        clip.append(Image.open(path_tmp).convert('RGB'))
 
     if train: # Apply augmentation
         clip,flip,dx,dy,sx,sy = data_augmentation(clip, shape, jitter, hue, saturation, exposure)

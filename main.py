@@ -72,21 +72,35 @@ if __name__ == '__main__':
     ####### Data loader, training scheme and loss function are different for AVA and UCF24/JHMDB21 datasets
     # ---------------------------------------------------------------
     dataset = cfg.TRAIN.DATASET
-    assert dataset == 'ucf24' or dataset == 'jhmdb21' or dataset == 'ava', 'invalid dataset'
+    assert dataset == 'ucf24' or dataset == 'ucsp', 'invalid dataset'
 
-    if dataset == 'ava':
-        train_dataset = Ava(cfg, split='train', only_detection=False)
-        test_dataset  = Ava(cfg, split='val', only_detection=False)
-        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=cfg.TRAIN.BATCH_SIZE, shuffle=True, 
+    if dataset == 'ucsp':
+        train_dataset = list_dataset.UCSP_Dataset(cfg.LISTDATA.BASE_PTH, cfg.LISTDATA.TRAIN_FILE, dataset=dataset,
+                        shape=(cfg.DATA.TRAIN_CROP_SIZE, cfg.DATA.TRAIN_CROP_SIZE),
+                        transform=transforms.Compose([transforms.ToTensor()]), 
+                        train=True, clip_duration=cfg.DATA.NUM_FRAMES, sampling_rate=cfg.DATA.SAMPLING_RATE)
+        print("##### len(train_dataset): ", len(train_dataset)) # trainlist.txt items amount "Basketball/v_Basketball_g15_c05/00064.txt"
+        train_loader  = torch.utils.data.DataLoader(train_dataset, batch_size= cfg.TRAIN.BATCH_SIZE, shuffle=True,
                                                 num_workers=cfg.DATA_LOADER.NUM_WORKERS, drop_last=True, pin_memory=True)
-        test_loader  = torch.utils.data.DataLoader(test_dataset, batch_size=cfg.TRAIN.BATCH_SIZE, shuffle=False,
+        print("##### len(train_loader): ", len(train_loader))
+    
+        test_dataset  = list_dataset.UCSP_Dataset(cfg.LISTDATA.BASE_PTH, cfg.LISTDATA.TEST_FILE, dataset=dataset,
+                        shape=(cfg.DATA.TRAIN_CROP_SIZE, cfg.DATA.TRAIN_CROP_SIZE),
+                        transform=transforms.Compose([transforms.ToTensor()]), 
+                        train=False, clip_duration=cfg.DATA.NUM_FRAMES, sampling_rate=cfg.DATA.SAMPLING_RATE)
+        print("##### len(test_dataset): ", len(test_dataset))
+        # print("test dataset len: ", test_dataset.__len__())
+        test_loader   = torch.utils.data.DataLoader(test_dataset, batch_size= cfg.TRAIN.BATCH_SIZE, shuffle=False,
                                                 num_workers=cfg.DATA_LOADER.NUM_WORKERS, drop_last=False, pin_memory=True)
-        loss_module   = RegionLoss_Ava(cfg).cuda()
+        print("##### len(test_loader): ", len(test_loader))
+        
+        loss_module   = RegionLoss(cfg).cuda()
 
-        train = getattr(sys.modules[__name__], 'train_ava')
-        test  = getattr(sys.modules[__name__], 'test_ava')
+        train = getattr(sys.modules[__name__], 'train_ucf24_jhmdb21')
+        test  = getattr(sys.modules[__name__], 'test_ucf24_jhmdb21')
 
-    elif dataset in ['ucf24', 'jhmdb21']:
+
+    elif dataset == 'ucf24':
         train_dataset = list_dataset.UCF_JHMDB_Dataset(cfg.LISTDATA.BASE_PTH, cfg.LISTDATA.TRAIN_FILE, dataset=dataset,
                         shape=(cfg.DATA.TRAIN_CROP_SIZE, cfg.DATA.TRAIN_CROP_SIZE),
                         transform=transforms.Compose([transforms.ToTensor()]), 

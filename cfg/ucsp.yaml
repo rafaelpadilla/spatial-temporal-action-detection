@@ -1,7 +1,7 @@
 TRAIN:
   RESUME_PATH: "backup/ucsp/yowo_ucsp_best.pth"
   # RESUME_PATH: ""
-  DATASET: ucf24  # `ava`, `ucf24` or `jhmdb21`
+  DATASET: ucsp  # `ava`, `ucf24` or `jhmdb21`
   BATCH_SIZE: 2
   TOTAL_BATCH_SIZE: 128
   LEARNING_RATE: 1e-4
